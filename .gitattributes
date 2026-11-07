@@ -1,2 +1,10 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+*.bmp binary
+*.pdf binary
+*.png binary
+*.jar binary
+stegobmp text eol=lf
+*.sh text eol=lf
+Makefile text eol=lf
