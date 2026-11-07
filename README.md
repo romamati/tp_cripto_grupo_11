@@ -136,6 +136,26 @@ está en los parámetros. Códigos de salida:
 | 1      | Error de archivos, del BMP, de capacidad o de cifrado. |
 | 2      | Parámetros incorrectos.                              |
 
+## Prueba de los ejemplos
+
+Desde la carpeta del proyecto:
+
+```sh
+./probar_ejemplos.sh
+```
+
+El script compila una copia del código con `make` en una carpeta temporal y prueba lo siguiente:
+
+1. Extrae los ejemplos de `materiales/ejemplo/`, cada uno con su método y su cifrado (password `margarita`).
+   Comprueba que salga un `.png` válido y que de `lado.bmp` no se extraiga nada.
+2. Vuelve a ocultar cada `.png` en `lado.bmp` con los mismos parámetros y lo compara byte a byte con el
+   archivo de la cátedra.
+3. Oculta y extrae un archivo de prueba con LSB1, LSB4 y LSBI, sin cifrar y con cada combinación de
+   algoritmo y modo, y compara los sha256.
+
+Muestra OK o FALLA para cada caso y, al final, cuántos pasaron y cuáles fallaron. Si todos pasan, termina con
+código 0. No deja archivos dentro del repositorio.
+
 ## Estructura
 
 ```
