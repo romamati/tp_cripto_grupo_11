@@ -1,0 +1,18 @@
+#!/bin/sh
+DIR="$(cd "$(dirname "$0")" && pwd)"
+JAR="$DIR/stegobmp.jar"
+
+if [ ! -f "$JAR" ]; then
+    echo "Error: falta compilar el programa. Ejecutá make en $DIR" >&2
+    exit 1
+fi
+
+# Java decodifica los argumentos según el locale: sin UTF-8, el guion largo y los acentos llegan como '?'.
+if [ "$(locale charmap 2>/dev/null)" != "UTF-8" ]; then
+    UTF8_LOCALE="$(locale -a 2>/dev/null | grep -i -m 1 -E '^(c|en_us)\.utf-?8$')"
+    if [ -n "$UTF8_LOCALE" ]; then
+        export LC_ALL="$UTF8_LOCALE"
+    fi
+fi
+
+exec java -jar "$JAR" "$@"
