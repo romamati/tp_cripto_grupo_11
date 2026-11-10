@@ -1,9 +1,9 @@
 # Contrato de LSBI y referencias oficiales
 
-Esta especificación guía la implementación de la fase 2 en
-`src/stegobmp/steg/Lsbi.java`. La clase todavía contiene stubs; los resultados de
-referencia de este documento se verificaron mediante una comprobación independiente
-sobre los archivos de la cátedra.
+Esta especificación describe la implementación de la fase 2 en
+`src/stegobmp/steg/Lsbi.java`. Los resultados de referencia de este documento se
+verificaron mediante una comprobación independiente sobre los archivos de la cátedra
+y se utilizan en las pruebas de capacidad, extracción y ocultamiento.
 
 ## Fuentes y decisiones
 
@@ -194,6 +194,5 @@ cmp materiales/ejemplo/ladoLSBI.bmp "$TMP/regenerado.bmp"
 
 `TMP` debe apuntar a una carpeta temporal existente. El resultado esperado es un
 PNG de 44.886 bytes con el hash de la tabla y un `cmp` sin diferencias. Estos
-comandos son criterios de aceptación futuros: todavía fallan mientras LSBI siga
-sin implementar. Los casos con cifrado se comprobarán integralmente al integrar
-la fase 3.
+comandos verifican la extracción y reproducción del ejemplo oficial. Los casos
+con cifrado se comprobarán integralmente al integrar la fase 3.
