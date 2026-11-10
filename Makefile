@@ -8,7 +8,7 @@ SOURCES := $(shell find $(SRC_DIR) -name '*.java')
 TEST_DIR := tests
 TEST_CLASSES_DIR := $(OUT_DIR)/test-classes
 TEST_SOURCES = $(shell find $(TEST_DIR) -name '*.java')
-TEST_MAIN_CLASS := stegobmp.steg.LsbiCapacityTest
+TEST_MAIN_CLASSES := stegobmp.steg.LsbiCapacityTest stegobmp.steg.LsbiExtractTest
 
 .PHONY: all clean test
 
@@ -24,7 +24,9 @@ $(JAR): $(SOURCES)
 test: $(JAR)
 	mkdir -p $(TEST_CLASSES_DIR)
 	javac --release 21 -encoding UTF-8 -Xlint:all,-serial -cp $(CLASSES_DIR) -d $(TEST_CLASSES_DIR) $(TEST_SOURCES)
-	java -cp $(CLASSES_DIR):$(TEST_CLASSES_DIR) $(TEST_MAIN_CLASS)
+	for test_class in $(TEST_MAIN_CLASSES); do \
+		java -cp $(CLASSES_DIR):$(TEST_CLASSES_DIR) $$test_class || exit $$?; \
+	done
 
 clean:
 	rm -rf $(OUT_DIR) $(JAR)
