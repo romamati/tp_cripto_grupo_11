@@ -8,7 +8,8 @@ SOURCES := $(shell find $(SRC_DIR) -name '*.java')
 TEST_DIR := tests
 TEST_CLASSES_DIR := $(OUT_DIR)/test-classes
 TEST_SOURCES = $(shell find $(TEST_DIR) -name '*.java')
-TEST_MAIN_CLASSES := stegobmp.steg.LsbiCapacityTest stegobmp.steg.LsbiExtractTest stegobmp.steg.LsbiEmbedTest
+TEST_MAIN_CLASSES := stegobmp.steg.LsbiCapacityTest stegobmp.steg.LsbiExtractTest \
+                     stegobmp.steg.LsbiEmbedTest stegobmp.steg.LsbiInvariantTest
 
 .PHONY: all clean test
 
