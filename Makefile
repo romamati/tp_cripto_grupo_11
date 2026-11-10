@@ -11,7 +11,7 @@ TEST_SOURCES = $(shell find $(TEST_DIR) -name '*.java')
 TEST_MAIN_CLASSES := stegobmp.steg.LsbiCapacityTest stegobmp.steg.LsbiExtractTest \
                      stegobmp.steg.LsbiEmbedTest stegobmp.steg.LsbiInvariantTest
 
-.PHONY: all clean test
+.PHONY: all clean test test-cli
 
 all: $(JAR)
 	chmod +x $(LAUNCHER)
@@ -28,6 +28,9 @@ test: $(JAR)
 	for test_class in $(TEST_MAIN_CLASSES); do \
 		java -cp $(CLASSES_DIR):$(TEST_CLASSES_DIR) $$test_class || exit $$?; \
 	done
+
+test-cli: all test
+	java -cp $(CLASSES_DIR):$(TEST_CLASSES_DIR) stegobmp.LsbiCliTest
 
 clean:
 	rm -rf $(OUT_DIR) $(JAR)
