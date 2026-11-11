@@ -56,7 +56,8 @@ bytes ni se reinicia el ciclo al cambiar de fila. Así, `i % 3` define qué byte
 utilizan también en esa región. Esta convención es compatible con el contrato que
 recibe únicamente `body` y con la indicación de usar el bloque completo. El ejemplo
 `lado.bmp`, de 640 píxeles de ancho, no tiene padding de filas; por lo tanto, su
-comparación no valida ese caso. Se cubrirá con portadores adicionales.
+comparación no valida ese caso. Las pruebas por CLI lo cubren con portadores
+adicionales que tienen 1, 2 y 3 bytes de padding por fila.
 
 ## Indicadores y patrones
 
@@ -94,8 +95,8 @@ al último bit del payload. La inversión tampoco se extiende a esas regiones.
 El paper contiene ambigüedades en su ejemplo sobre patrones con una sola
 ocurrencia. Se adopta la regla general de mayoría estricta también para ellos:
 si su único LSB cambiaría, se marca la inversión; si no cambiaría, no se marca.
-Ese caso y los empates necesitan pruebas propias, porque el ejemplo oficial no
-los ejercita.
+Ese caso y los empates se cubren con pruebas propias, porque el ejemplo oficial
+no los ejercita.
 
 Se preservan el encabezado completo, los siete bits superiores de cada byte y
 todos los bytes no utilizados. El byte rojo del índice 2 es la única excepción al
@@ -179,20 +180,35 @@ Reiniciar el ciclo BGR después de los indicadores produce un tamaño de 109.078
 bytes, incompatible con la capacidad del portador y con el PNG esperado. Esta
 comprobación descarta ese recorrido para los ejemplos de la cátedra.
 
-## Validación al implementar la fase 2
+## Validación de la fase 2
 
-La implementación deberá permitir reproducir esta comprobación desde la raíz del
-repositorio, usando una carpeta temporal para los resultados:
+Desde la raíz del repositorio:
 
 ```sh
-./stegobmp -extract -p materiales/ejemplo/ladoLSBI.bmp -out "$TMP/recuperado" -steg LSBI
-wc -c < "$TMP/recuperado.png"
-sha256sum "$TMP/recuperado.png"
-./stegobmp -embed -in "$TMP/recuperado.png" -p materiales/ejemplo/lado.bmp -out "$TMP/regenerado.bmp" -steg LSBI
-cmp materiales/ejemplo/ladoLSBI.bmp "$TMP/regenerado.bmp"
+make test-cli
+make comparar
 ```
 
-`TMP` debe apuntar a una carpeta temporal existente. El resultado esperado es un
-PNG de 44.886 bytes con el hash de la tabla y un `cmp` sin diferencias. Estos
-comandos verifican la extracción y reproducción del ejemplo oficial. Los casos
-con cifrado se comprobarán integralmente al integrar la fase 3.
+El primer comando ejecuta las pruebas unitarias y los 23 casos por línea de
+comandos sin cifrado. El segundo reproduce la comparación entre métodos en
+memoria; las métricas y su interpretación están en el
+[informe de la fase 2](../informe/Fase2-LSBI.md).
+
+Para verificar manualmente la extracción y reproducción de LSBI:
+
+```sh
+(
+    set -eu
+    DIRECTORIO_PRUEBA="$(mktemp -d)"
+    trap 'rm -rf -- "$DIRECTORIO_PRUEBA"' EXIT
+    ./stegobmp -extract -p materiales/ejemplo/ladoLSBI.bmp -out "$DIRECTORIO_PRUEBA/recuperado" -steg LSBI
+    wc -c < "$DIRECTORIO_PRUEBA/recuperado.png"
+    sha256sum "$DIRECTORIO_PRUEBA/recuperado.png"
+    ./stegobmp -embed -in "$DIRECTORIO_PRUEBA/recuperado.png" -p materiales/ejemplo/lado.bmp -out "$DIRECTORIO_PRUEBA/regenerado.bmp" -steg LSBI
+    cmp materiales/ejemplo/ladoLSBI.bmp "$DIRECTORIO_PRUEBA/regenerado.bmp"
+)
+```
+
+El resultado esperado es un PNG de 44886 bytes con el hash de la tabla y un
+`cmp` sin diferencias. Los casos con cifrado se comprobarán integralmente al
+integrar la fase 3.

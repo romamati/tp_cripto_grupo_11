@@ -11,7 +11,7 @@ TEST_SOURCES = $(shell find $(TEST_DIR) -name '*.java')
 TEST_MAIN_CLASSES := stegobmp.steg.LsbiCapacityTest stegobmp.steg.LsbiExtractTest \
                      stegobmp.steg.LsbiEmbedTest stegobmp.steg.LsbiInvariantTest
 
-.PHONY: all clean test test-cli
+.PHONY: all clean test test-cli comparar
 
 all: $(JAR)
 	chmod +x $(LAUNCHER)
@@ -31,6 +31,9 @@ test: $(JAR)
 
 test-cli: all test
 	java -cp $(CLASSES_DIR):$(TEST_CLASSES_DIR) stegobmp.LsbiCliTest
+
+comparar: $(JAR)
+	java --class-path $(JAR) tools/CompareStegMethods.java
 
 clean:
 	rm -rf $(OUT_DIR) $(JAR)

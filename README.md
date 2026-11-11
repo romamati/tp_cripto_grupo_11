@@ -3,8 +3,8 @@
 Trabajo práctico de implementación de Criptografía y Seguridad (72.04, ITBA).
 
 `stegobmp` oculta un archivo cualquiera dentro de una imagen BMP de 24 bits sin compresión y recupera
-lo ocultado. Los métodos disponibles son LSB1, LSB4 y LSBI. Opcionalmente, antes de ocultarlo, cifra el
-archivo con una password.
+lo ocultado. LSB1, LSB4 y LSBI permiten ocultar y extraer sin cifrado. El cifrado con password
+corresponde a la fase 3 y todavía no está implementado.
 
 ## Integrantes
 
@@ -15,7 +15,8 @@ archivo con una password.
 
 ## Requisitos
 
-- Linux (probado en Ubuntu 22.04 sobre WSL2).
+- Linux. La consigna utiliza WSL2 con Ubuntu 22.04.3 LTS y exige funcionamiento en pampero.
+  La fase 2 se verificó localmente en WSL2 con Ubuntu 24.04 y Java 21; la prueba en pampero queda pendiente.
 - JDK 21, que incluye `java`, `javac` y `jar`. No se usan librerías externas: el cifrado usa la JCE del JDK.
 - `make`.
 
@@ -95,24 +96,25 @@ ocultado. Por ejemplo, con `-out mensaje1` se obtiene `mensaje1.txt`.
 
 ### Ejemplos
 
-Ocultar con LSBI y 3DES en modo CBC, y después extraer:
+Ocultar y recuperar un archivo con LSBI, sin cifrado:
+
+```sh
+./stegobmp -embed -in mensaje1.txt -p imagen1.bmp -out imagenmas1.bmp -steg LSBI
+./stegobmp -extract -p imagenmas1.bmp -out mensaje1 -steg LSBI
+```
+
+Extraer los ejemplos sin cifrado de la cátedra:
+
+```sh
+./stegobmp -extract -p materiales/ejemplo/ladoLSB1.bmp -out lsb1 -steg LSB1
+./stegobmp -extract -p materiales/ejemplo/ladoLSBI.bmp -out lsbi -steg LSBI
+```
+
+La sintaxis prevista para cifrado en la fase 3 es:
 
 ```sh
 ./stegobmp -embed -in mensaje1.txt -p imagen1.bmp -out imagenmas1.bmp -steg LSBI -a 3des -m cbc -pass oculto
 ./stegobmp -extract -p imagenmas1.bmp -out mensaje1 -steg LSBI -a 3des -m cbc -pass oculto
-```
-
-Ocultar sin cifrar:
-
-```sh
-./stegobmp -embed -in mensaje1.txt -p imagen1.bmp -out imagenmas1.bmp -steg LSB4
-```
-
-Extraer los ejemplos de la cátedra:
-
-```sh
-./stegobmp -extract -p materiales/ejemplo/ladoLSB1.bmp -out lsb1 -steg LSB1
-./stegobmp -extract -p materiales/ejemplo/ladoLSB1aes128cbc.bmp -out lsb1aes -steg LSB1 -a aes128 -m cbc -pass margarita
 ```
 
 ## Formato de lo oculto
@@ -136,6 +138,33 @@ está en los parámetros. Códigos de salida:
 | 1      | Error de archivos, del BMP, de capacidad o de cifrado. |
 | 2      | Parámetros incorrectos.                              |
 
+## Pruebas de la fase 2
+
+Desde la raíz del repositorio:
+
+```sh
+make test
+make test-cli
+```
+
+`make test` ejecuta las pruebas de capacidad, extracción, ocultamiento y límites de LSBI, sin
+bibliotecas externas. `make test-cli` incluye esas pruebas y 23 casos por línea de comandos para
+LSB1, LSB4 y LSBI. Comprueba hashes y tamaños del PNG oficial, regeneración idéntica con `cmp`,
+archivos binarios, BMP con 1, 2 y 3 bytes de padding por fila, y errores sin crear ni sobrescribir salidas.
+Los casos por CLI usan una carpeta temporal que se elimina al terminar. `cmp` forma parte de
+las herramientas habituales de Ubuntu.
+
+Para repetir la comparación de métodos:
+
+```sh
+make comparar
+```
+
+La herramienta utiliza el mismo PNG y portador de los ejemplos, verifica la recuperación y la coincidencia
+con los BMP oficiales, e imprime capacidades, bytes/bits modificados, MSE y PSNR. Trabaja en memoria y
+no genera imágenes en el repositorio. El análisis, los resultados y las respuestas I, II, VII y IX están en
+[el informe de fase 2](informe/Fase2-LSBI.md).
+
 ## Prueba de los ejemplos
 
 Desde la carpeta del proyecto:
@@ -155,6 +184,9 @@ El script compila una copia del código con `make` en una carpeta temporal y pru
 
 Muestra OK o FALLA para cada caso y, al final, cuántos pasaron y cuáles fallaron. Si todos pasan, termina con
 código 0. No deja archivos dentro del repositorio.
+
+Al cerrar la fase 2 se aprueban **13 de 67 casos**. Los 54 restantes dependen del cifrado pendiente,
+por lo que este script todavía termina con código 1. Las pruebas de `make test-cli` pasan completas.
 
 ## Estructura
 
