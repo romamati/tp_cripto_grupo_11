@@ -1,6 +1,6 @@
 # Contrato de LSBI y referencias oficiales
 
-Esta especificación describe la implementación de la fase 2 en
+Esta especificación describe la implementación de LSBI en
 `src/stegobmp/steg/Lsbi.java`. Los resultados de referencia de este documento se
 verificaron mediante una comprobación independiente sobre los archivos de la cátedra
 y se utilizan en las pruebas de capacidad, extracción y ocultamiento.
@@ -180,7 +180,7 @@ Reiniciar el ciclo BGR después de los indicadores produce un tamaño de 109.078
 bytes, incompatible con la capacidad del portador y con el PNG esperado. Esta
 comprobación descarta ese recorrido para los ejemplos de la cátedra.
 
-## Validación de la fase 2
+## Validación de LSBI
 
 Desde la raíz del repositorio:
 
@@ -192,7 +192,7 @@ make comparar
 El primer comando ejecuta las pruebas unitarias y los 23 casos por línea de
 comandos sin cifrado. El segundo reproduce la comparación entre métodos en
 memoria; las métricas y su interpretación están en el
-[informe de la fase 2](../informe/Fase2-LSBI.md).
+[informe de implementación y análisis](../informe/ImplementacionYAnalisis.md).
 
 Para verificar manualmente la extracción y reproducción de LSBI:
 
@@ -210,5 +210,5 @@ Para verificar manualmente la extracción y reproducción de LSBI:
 ```
 
 El resultado esperado es un PNG de 44886 bytes con el hash de la tabla y un
-`cmp` sin diferencias. Los casos con cifrado se comprobarán integralmente al
-integrar la fase 3.
+`cmp` sin diferencias. La validación de los ejemplos cifrados queda pendiente de
+la implementación criptográfica.

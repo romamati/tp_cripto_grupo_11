@@ -4,7 +4,7 @@ Trabajo práctico de implementación de Criptografía y Seguridad (72.04, ITBA).
 
 `stegobmp` oculta un archivo cualquiera dentro de una imagen BMP de 24 bits sin compresión y recupera
 lo ocultado. LSB1, LSB4 y LSBI permiten ocultar y extraer sin cifrado. El cifrado con password
-corresponde a la fase 3 y todavía no está implementado.
+todavía no está implementado.
 
 ## Integrantes
 
@@ -16,7 +16,7 @@ corresponde a la fase 3 y todavía no está implementado.
 ## Requisitos
 
 - Linux. La consigna utiliza WSL2 con Ubuntu 22.04.3 LTS y exige funcionamiento en pampero.
-  La fase 2 se verificó localmente en WSL2 con Ubuntu 24.04 y Java 21; la prueba en pampero queda pendiente.
+  La implementación sin cifrado se verificó localmente en WSL2 con Ubuntu 24.04 y Java 21; la prueba en pampero queda pendiente.
 - JDK 21, que incluye `java`, `javac` y `jar`. No se usan librerías externas: el cifrado usa la JCE del JDK.
 - `make`.
 
@@ -110,7 +110,7 @@ Extraer los ejemplos sin cifrado de la cátedra:
 ./stegobmp -extract -p materiales/ejemplo/ladoLSBI.bmp -out lsbi -steg LSBI
 ```
 
-La sintaxis prevista para cifrado en la fase 3 es:
+La sintaxis prevista para el cifrado pendiente de implementación es:
 
 ```sh
 ./stegobmp -embed -in mensaje1.txt -p imagen1.bmp -out imagenmas1.bmp -steg LSBI -a 3des -m cbc -pass oculto
@@ -138,7 +138,7 @@ está en los parámetros. Códigos de salida:
 | 1      | Error de archivos, del BMP, de capacidad o de cifrado. |
 | 2      | Parámetros incorrectos.                              |
 
-## Pruebas de la fase 2
+## Pruebas de la implementación
 
 Desde la raíz del repositorio:
 
@@ -163,7 +163,7 @@ make comparar
 La herramienta utiliza el mismo PNG y portador de los ejemplos, verifica la recuperación y la coincidencia
 con los BMP oficiales, e imprime capacidades, bytes/bits modificados, MSE y PSNR. Trabaja en memoria y
 no genera imágenes en el repositorio. El análisis, los resultados y las respuestas I, II, VII y IX están en
-[el informe de fase 2](informe/Fase2-LSBI.md).
+[el informe de implementación y análisis](informe/ImplementacionYAnalisis.md).
 
 ## Prueba de los ejemplos
 
@@ -185,7 +185,7 @@ El script compila una copia del código con `make` en una carpeta temporal y pru
 Muestra OK o FALLA para cada caso y, al final, cuántos pasaron y cuáles fallaron. Si todos pasan, termina con
 código 0. No deja archivos dentro del repositorio.
 
-Al cerrar la fase 2 se aprueban **13 de 67 casos**. Los 54 restantes dependen del cifrado pendiente,
+Actualmente se aprueban **13 de 67 casos**. Los 54 restantes dependen del cifrado pendiente,
 por lo que este script todavía termina con código 1. Las pruebas de `make test-cli` pasan completas.
 
 ## Estructura

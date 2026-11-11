@@ -1,9 +1,36 @@
-# Fase 2: análisis e implementación de LSBI
+# Implementación y análisis de stegobmp
 
-Revisión del 10 de noviembre de 2026. Este documento responde las preguntas I,
-II, VII y IX de la consigna y reúne la evidencia de la fase 2. El cifrado,
-el estegoanálisis de los archivos del grupo y las demás preguntas del informe
-pertenecen a las otras fases.
+Revisión del 10 de noviembre de 2026. Este documento describe las funcionalidades
+implementadas, el trabajo pendiente y las validaciones realizadas. Desarrolla las
+preguntas I, II, VII y IX de la consigna con resultados del ocultamiento y la
+extracción sin cifrado.
+
+## Estado de la implementación
+
+### Funcionalidades implementadas
+
+- Programa Java 21, compilación con `make` y ejecución por consola mediante `stegobmp`.
+- Lectura de portadores BMP de 24 bits sin compresión y uso del cuerpo en orden
+  físico BGR, incluidos los bytes de padding de las filas.
+- Ocultamiento y extracción con LSB1, LSB4 y LSBI, comprobación de capacidad y
+  formato de tamaño big endian, contenido y extensión terminada en NUL.
+- Validación de parámetros, valores por defecto y mensajes de error con los
+  códigos de salida documentados en el README.
+- Pruebas unitarias y por CLI, reproducción de los ejemplos oficiales sin cifrar
+  y comparación reproducible de capacidad y distorsión con `make comparar`.
+
+### Funcionalidades y validaciones pendientes
+
+- Implementar cifrado y descifrado con PBKDF2, AES-128/192/256 y 3DES, en los modos
+  ECB, CBC, CFB8 y OFB. Las interfaces y su conexión con el programa están preparadas.
+- Admitir archivos vacíos y extensiones de más de 15 bytes: el código actual
+  todavía los rechaza, aunque la consigna no establece esas restricciones.
+- Completar el estegoanálisis y la recuperación reproducible de los cuatro
+  archivos del grupo, incluido el método adicional, los mensajes anidados y el video.
+- Desarrollar las respuestas III, IV, V, VI, VIII y X e integrarlas con este
+  análisis en el informe completo, con fuentes LaTeX y PDF versionado.
+- Validar el programa integrado en Ubuntu 22.04.3/Java 21 y en pampero, conservando
+  evidencia de versiones, comandos y resultados.
 
 ## Fuentes
 
@@ -205,7 +232,7 @@ Omitir el rojo y publicar los indicadores no impide que alguien que conoce el
 método recupere el mensaje. Una distorsión pequeña puede ayudar a que pase
 inadvertido visualmente, pero no demuestra resistencia al estegoanálisis, ni
 robustez frente a transformaciones de imagen, ni confidencialidad del contenido.
-El cifrado previsto para la fase 3 cubre una función diferente.
+El cifrado, todavía pendiente de implementación, cumple la función de proteger la confidencialidad del contenido.
 
 ## IX. Dificultades de implementación y decisiones tomadas
 
@@ -221,7 +248,7 @@ El cifrado previsto para la fase 3 cubre una función diferente.
 | Incluir el padding de filas sin agregar metadatos a `StegMethod`. | Se recorre linealmente todo el cuerpo. La prueba CLI genera BMP con 1, 2 y 3 bytes de padding por fila, comprueba que se utilizan esos bytes y recupera el archivo correctamente con los tres métodos. |
 | Asegurar interoperabilidad y no depender solo de una ida y vuelta propia. | Se reproducen los tres ejemplos oficiales sin cifrado con igualdad byte a byte mediante `cmp`; se verifica el hash conocido del PNG y la conservación del encabezado. |
 
-## Validación y estado al cierre de la fase
+## Validación actual
 
 - `make test-cli` pasa las pruebas unitarias y los 23 casos por CLI con Java 21.
 - `make comparar` reproduce las métricas y comprueba que los tres resultados
@@ -230,5 +257,5 @@ El cifrado previsto para la fase 3 cubre una función diferente.
   cifrado todavía pendiente. En este estado su código de salida es 1.
 - La verificación en pampero sigue pendiente para el cierre integral del TP.
 
-Este documento debe integrarse con las respuestas de las demás fases al armar
-el informe final del grupo.
+El informe final debe reunir este análisis, las respuestas pendientes y la
+evidencia del estegoanálisis y de la validación integral del programa.
