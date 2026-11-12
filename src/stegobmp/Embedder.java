@@ -31,9 +31,6 @@ public final class Embedder {
 
     private static HiddenFile readFileToHide(Path input) {
         byte[] content = FileAccess.read(input, "el archivo a ocultar");
-        if (content.length == 0) {
-            throw new StegoException("el archivo a ocultar " + FileAccess.quoted(input) + " está vacío.");
-        }
         String extension = FileExtension.of(input);
         if (extension.isEmpty()) {
             Messages.warn("el archivo a ocultar " + FileAccess.quoted(input)
