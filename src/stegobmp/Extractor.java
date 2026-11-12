@@ -29,12 +29,12 @@ public final class Extractor {
     }
 
     private static HiddenFile decryptAndUnpack(byte[] recovered, EncryptionSettings settings, ExtractRequest request) {
-        byte[] encrypted = findHidden(() -> PayloadFormat.sizePrefixedBlock(recovered), request);
+        byte[] encrypted = findHidden(() -> PayloadFormat.encryptedBlock(recovered), request);
         byte[] plain = Encryptor.from(settings).decrypt(encrypted);
         try {
             return PayloadFormat.unpack(plain);
         } catch (NoHiddenDataException e) {
-            throw new DecryptionException();
+            throw new DecryptionException("el contenido descifrado no tiene el formato esperado: " + e.getMessage());
         }
     }
 

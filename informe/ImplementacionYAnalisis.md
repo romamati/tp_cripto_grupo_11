@@ -1,9 +1,9 @@
 # Implementación y análisis de stegobmp
 
-Revisión del 10 de noviembre de 2026. Este documento describe las funcionalidades
+Revisión del 12 de noviembre de 2026. Este documento describe las funcionalidades
 implementadas, el trabajo pendiente y las validaciones realizadas. Desarrolla las
-preguntas I, II, VII y IX de la consigna con resultados del ocultamiento y la
-extracción sin cifrado.
+preguntas I, II, VII, VIII y IX de la consigna con resultados del ocultamiento y la
+extracción, con y sin cifrado.
 
 ## Estado de la implementación
 
@@ -16,18 +16,22 @@ extracción sin cifrado.
   formato de tamaño big endian, contenido y extensión terminada en NUL.
 - Validación de parámetros, valores por defecto y mensajes de error con los
   códigos de salida documentados en el README.
-- Pruebas unitarias y por CLI, reproducción de los ejemplos oficiales sin cifrar
-  y comparación reproducible de capacidad y distorsión con `make comparar`.
+- Cifrado y descifrado con la JCE del JDK: AES-128/192/256 y 3DES (DES-EDE3) en
+  los modos ECB, CBC, CFB8 y OFB, con clave e IV derivados por PBKDF2-HMAC-SHA256,
+  salt de ocho bytes cero y 10000 iteraciones. Se oculta
+  `tamaño del cifrado || cifrado(tamaño || archivo || extensión)`.
+- Archivos vacíos, extensiones de cualquier longitud y secretos BMP completos, con
+  y sin cifrado. La extensión recuperada se valida para que no contenga
+  separadores de carpetas ni caracteres de control.
+- Pruebas unitarias y por CLI, reproducción byte a byte de los seis ejemplos
+  oficiales, vectores de cifrado contrastados con OpenSSL y comparación
+  reproducible de capacidad y distorsión con `make comparar`.
 
 ### Funcionalidades y validaciones pendientes
 
-- Implementar cifrado y descifrado con PBKDF2, AES-128/192/256 y 3DES, en los modos
-  ECB, CBC, CFB8 y OFB. Las interfaces y su conexión con el programa están preparadas.
-- Admitir archivos vacíos y extensiones de más de 15 bytes: el código actual
-  todavía los rechaza, aunque la consigna no establece esas restricciones.
 - Completar el estegoanálisis y la recuperación reproducible de los cuatro
   archivos del grupo, incluido el método adicional, los mensajes anidados y el video.
-- Desarrollar las respuestas III, IV, V, VI, VIII y X e integrarlas con este
+- Desarrollar las respuestas III, IV, V, VI y X e integrarlas con este
   análisis en el informe completo, con fuentes LaTeX y PDF versionado.
 - Validar el programa integrado en Ubuntu 22.04.3/Java 21 y en pampero, conservando
   evidencia de versiones, comandos y resultados.
@@ -232,7 +236,45 @@ Omitir el rojo y publicar los indicadores no impide que alguien que conoce el
 método recupere el mensaje. Una distorsión pequeña puede ayudar a que pase
 inadvertido visualmente, pero no demuestra resistencia al estegoanálisis, ni
 robustez frente a transformaciones de imagen, ni confidencialidad del contenido.
-El cifrado, todavía pendiente de implementación, cumple la función de proteger la confidencialidad del contenido.
+Esa función la cumple el cifrado con password, que se aplica antes de ocultar.
+
+## VIII. Otras formas de guardar los patrones invertidos
+
+La implementación entregada respeta la consigna: los cuatro indicadores ocupan el
+LSB de los primeros cuatro bytes del cuerpo (índices 0 a 3, patrones `00`, `01`,
+`10` y `11`) y el mensaje empieza en el índice 4. Lo que sigue es un análisis de
+alternativas; ninguna se implementó, porque cambiarían el formato que deben leer
+los archivos de la cátedra.
+
+Cualquier alternativa tiene que respetar dos condiciones. La primera es que el
+extractor pueda leer los indicadores antes de interpretar el mensaje, porque sin
+ellos ni siquiera puede leer el tamaño. La segunda es que guardarlos no altere los
+bits 1 y 2 de los bytes del mensaje, que determinan el patrón de cada byte. La
+inversión solo toca el bit 0, y por eso el extractor puede recalcular el patrón
+sobre el portador modificado.
+
+| Alternativa | Localización y lectura | Capacidad | Distorsión | Información auxiliar |
+| --- | --- | --- | --- | --- |
+| LSB de los cuatro primeros bytes (implementada). | Fija, al inicio; se lee primero. | Usa cuatro bytes del portador, que no son todos B/G. | Hasta 4 componentes con error ±1. | Ninguna. |
+| LSB de los cuatro últimos bytes del cuerpo. | Fija; se conoce el tamaño del cuerpo por el encabezado, así que se puede leer antes del mensaje. | La misma; el mensaje puede empezar en el índice 0. | La misma. | Ninguna. Si el mensaje llena el portador, el final debe reservarse y la capacidad lo descuenta. |
+| LSB a continuación del último bit del mensaje. | Variable. | La misma. | La misma. | Circular: para ubicarlos hay que conocer el tamaño, pero el tamaño está guardado con inversión. Haría falta guardar el tamaño sin invertir o duplicar información. |
+| LSB de cuatro componentes rojas, que LSBI no usa para el mensaje. | Fija, por ejemplo índices 2, 5, 8 y 11. | El mensaje empieza en el índice 0 y no pierde bytes B/G. | Hasta 4 componentes rojas con error ±1. | Ninguna. Modifica componentes rojas, que LSBI deja intactas. |
+| Los cuatro bits juntos en un byte, con LSB4. | Fija; un único byte. | Libera 3 bytes del portador. | Un error de hasta 15 en una componente (error cuadrático hasta 225), en lugar de cuatro errores de ±1. Es un punto más llamativo. | Ninguna. |
+| Los cuatro bits en un byte completo, con LSB1. | Fija. | Peor: el byte ocupa 8 bytes del portador, no 4. | Hasta 8 componentes con error ±1. | Ninguna. |
+| Campos reservados del encabezado BMP (`bfReserved1/2`). | Fija, fuera de los píxeles. | No consume cuerpo. | Ninguna sobre la imagen. | Ninguna, pero esos campos deberían valer cero: un valor distinto delata el ocultamiento y otros programas pueden reescribirlos. |
+| Registro externo (junto con la password o por otro canal). | Fuera del archivo. | Máxima. | Ninguna. | Exige un canal adicional: el portador deja de ser autosuficiente y perder ese dato impide extraer. |
+| No guardarlos y probar las 16 combinaciones. | No hay registro. | Máxima. | Ninguna. | Requiere validar cada candidato. Con formato `tamaño || datos || extensión` sin firma puede haber falsos positivos. Con cifrado sin autenticación (CFB, OFB) se descifra 16 veces y se valida solo por estructura. |
+
+Ubicar los indicadores al final del cuerpo o en componentes rojas mantiene el
+costo de la versión implementada y evita mezclar los indicadores con el inicio del
+mensaje. Empaquetarlos con LSB4 ahorra tres bytes a cambio de una distorsión
+localizada mayor. Un registro externo o la búsqueda exhaustiva eliminan la
+distorsión, pero dependen de información fuera del portador o de una validación que
+el formato del TP no garantiza. Para mayor robustez se podrían repetir los
+indicadores (por ejemplo, tres copias con voto por mayoría) a costa de más bytes
+modificados. Con cuatro bits, todas las variantes tienen un efecto marginal sobre la
+capacidad: la diferencia real está en la localización, en cuán detectable es el
+cambio y en la dependencia de información auxiliar.
 
 ## IX. Dificultades de implementación y decisiones tomadas
 
@@ -247,15 +289,26 @@ El cifrado, todavía pendiente de implementación, cumple la función de protege
 | Mantener el formato completo del secreto y no cortar ante bytes nulos del contenido. | LSBI opera sobre todo el payload y devuelve todos los bytes recuperables. `PayloadFormat` interpreta tamaño big endian y extensión terminada en NUL; el PNG oficial se verifica por tamaño y SHA-256. |
 | Incluir el padding de filas sin agregar metadatos a `StegMethod`. | Se recorre linealmente todo el cuerpo. La prueba CLI genera BMP con 1, 2 y 3 bytes de padding por fila, comprueba que se utilizan esos bytes y recupera el archivo correctamente con los tres métodos. |
 | Asegurar interoperabilidad y no depender solo de una ida y vuelta propia. | Se reproducen los tres ejemplos oficiales sin cifrado con igualdad byte a byte mediante `cmp`; se verifica el hash conocido del PNG y la conservación del encabezado. |
+| El README de la cátedra indica para el ejemplo AES-128 el IV que corresponde a AES-256 y una clave de 16 bytes con la etiqueta de 32. | La clave y el IV se toman en forma contigua de la salida de PBKDF2: con AES-128 el IV son los bytes 16 a 31. Con esa separación se recuperan los tres ejemplos cifrados y su recifrado coincide byte a byte. El IV copiado del README daba un tamaño interior inválido. No se agregó un fallback entre IVs. |
+| Elegir la realimentación correcta de cada modo. | `AES/CFB/NoPadding` de la JCE usa 128 bits de realimentación; la consigna pide 8, por lo que se usa `CFB8`. OFB usa el bloque completo: 128 bits en AES y 64 en 3DES. Los nombres se fijan en `CipherMode` y se contrastan con vectores de OpenSSL (`aes-128-cfb8`, `des-ede3-ofb`, etc.). |
+| Calcular la capacidad con cifrado. | Se controla sobre el payload exterior real. ECB y CBC agregan un bloque completo de padding cuando el bloque interior ya está alineado; en un portador de prueba con capacidad LSBI de 42 bytes, 22 bytes de datos entran con AES-CBC y 23 necesitan 52. |
+| Detectar ciphertexts inválidos sin autenticación. | Longitud no múltiplo de bloque y padding inválido se informan como error de descifrado. La JCE acepta en silencio un ciphertext vacío con padding, por lo que se rechaza en forma explícita. En CFB y OFB una password incorrecta solo se detecta porque el formato interior queda inválido; no se agregó un MAC porque rompería la compatibilidad. |
+| No limitar archivos válidos ni abrir rutas inesperadas. | Se admiten archivos vacíos y extensiones de cualquier longitud: el terminador se busca en todo lo recuperable. La extensión se decodifica como UTF-8 estricto y se rechazan `/`, `\` y caracteres de control, para que no pueda escribir fuera del destino. |
 
 ## Validación actual
 
-- `make test-cli` pasa las pruebas unitarias y los 23 casos por CLI con Java 21.
+- `make test` ejecuta las pruebas de LSBI, del formato de payload, del cifrador
+  (PBKDF2, 32 vectores de OpenSSL, longitudes, errores y ejemplos oficiales) y la
+  matriz en memoria de 48 combinaciones de método, algoritmo y modo.
+- `make test-cli` agrega 23 casos por CLI sin cifrado y 61 con cifrado.
+- `bash probar_ejemplos.sh` aprueba 67 de 67 casos y termina con código 0.
 - `make comparar` reproduce las métricas y comprueba que los tres resultados
   coincidan con sus referencias y recuperen el mismo PNG.
-- `bash probar_ejemplos.sh` aprueba 13 de 67 casos; los otros 54 requieren el
-  cifrado todavía pendiente. En este estado su código de salida es 1.
-- La verificación en pampero sigue pendiente para el cierre integral del TP.
+- Resultados registrados el 12 de noviembre de 2026 con OpenJDK 21.0.13.0.3
+  (Homebrew) en macOS 26 (Darwin 25.6, arm64), sobre una copia limpia de los
+  archivos del repositorio. Los vectores de referencia se generaron con OpenSSL 3.6.4.
+- La verificación en Ubuntu 22.04.3/WSL2 y en pampero sigue pendiente para el cierre
+  integral del TP.
 
 El informe final debe reunir este análisis, las respuestas pendientes y la
 evidencia del estegoanálisis y de la validación integral del programa.
