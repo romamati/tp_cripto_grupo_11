@@ -9,7 +9,10 @@ TEST_DIR := tests
 TEST_CLASSES_DIR := $(OUT_DIR)/test-classes
 TEST_SOURCES = $(shell find $(TEST_DIR) -name '*.java')
 TEST_MAIN_CLASSES := stegobmp.steg.LsbiCapacityTest stegobmp.steg.LsbiExtractTest \
-                     stegobmp.steg.LsbiEmbedTest stegobmp.steg.LsbiInvariantTest
+                     stegobmp.steg.LsbiEmbedTest stegobmp.steg.LsbiInvariantTest \
+                     stegobmp.payload.PayloadFormatTest stegobmp.crypto.PasswordBasedEncryptorTest \
+                     stegobmp.crypto.EncryptedPayloadMatrixTest
+CLI_TEST_CLASSES := stegobmp.LsbiCliTest stegobmp.CryptoCliTest
 
 .PHONY: all clean test test-cli comparar
 
@@ -30,7 +33,9 @@ test: $(JAR)
 	done
 
 test-cli: all test
-	java -cp $(CLASSES_DIR):$(TEST_CLASSES_DIR) stegobmp.LsbiCliTest
+	for test_class in $(CLI_TEST_CLASSES); do \
+		java -cp $(CLASSES_DIR):$(TEST_CLASSES_DIR) $$test_class || exit $$?; \
+	done
 
 comparar: $(JAR)
 	java --class-path $(JAR) tools/CompareStegMethods.java
