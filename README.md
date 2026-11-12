@@ -3,8 +3,8 @@
 Trabajo práctico de implementación de Criptografía y Seguridad (72.04, ITBA).
 
 `stegobmp` oculta un archivo cualquiera dentro de una imagen BMP de 24 bits sin compresión y recupera
-lo ocultado. LSB1, LSB4 y LSBI permiten ocultar y extraer sin cifrado. El cifrado con password
-todavía no está implementado.
+lo ocultado con LSB1, LSB4 o LSBI. Opcionalmente cifra el archivo con una password antes de ocultarlo,
+con AES-128/192/256 o 3DES en modo ECB, CBC, CFB (8 bits) u OFB.
 
 ## Integrantes
 
@@ -16,7 +16,8 @@ todavía no está implementado.
 ## Requisitos
 
 - Linux. La consigna utiliza WSL2 con Ubuntu 22.04.3 LTS y exige funcionamiento en pampero.
-  La implementación sin cifrado se verificó localmente en WSL2 con Ubuntu 24.04 y Java 21; la prueba en pampero queda pendiente.
+  El programa se verificó con Java 21 en WSL2 con Ubuntu 24.04 (sin cifrado) y en macOS (completo, con cifrado);
+  las pruebas en Ubuntu 22.04.3 y en pampero quedan pendientes.
 - JDK 21, que incluye `java`, `javac` y `jar`. No se usan librerías externas: el cifrado usa la JCE del JDK.
 - `make`.
 
@@ -110,11 +111,18 @@ Extraer los ejemplos sin cifrado de la cátedra:
 ./stegobmp -extract -p materiales/ejemplo/ladoLSBI.bmp -out lsbi -steg LSBI
 ```
 
-La sintaxis prevista para el cifrado pendiente de implementación es:
+Ocultar y recuperar con cifrado 3DES en modo CBC (al extraer se usan los mismos `-a`, `-m` y `-pass`):
 
 ```sh
 ./stegobmp -embed -in mensaje1.txt -p imagen1.bmp -out imagenmas1.bmp -steg LSBI -a 3des -m cbc -pass oculto
 ./stegobmp -extract -p imagenmas1.bmp -out mensaje1 -steg LSBI -a 3des -m cbc -pass oculto
+```
+
+Extraer los ejemplos cifrados de la cátedra (password `margarita`):
+
+```sh
+./stegobmp -extract -p materiales/ejemplo/ladoLSB1aes128cbc.bmp -out aes -steg LSB1 -a aes128 -m cbc -pass margarita
+./stegobmp -extract -p materiales/ejemplo/ladoLSBIdescfb.bmp -out des -steg LSBI -a 3des -m cfb -pass margarita
 ```
 
 ## Formato de lo oculto
@@ -122,7 +130,39 @@ La sintaxis prevista para el cifrado pendiente de implementación es:
 Sin cifrado se oculta `tamaño || datos del archivo || extensión`, donde el tamaño ocupa 4 bytes en
 big endian y la extensión empieza con `.` y termina con `\0`.
 
-Con cifrado se oculta `tamaño del cifrado || cifrado(tamaño || datos del archivo || extensión)`.
+Con cifrado se oculta `tamaño del cifrado || cifrado(tamaño || datos del archivo || extensión)`. El tamaño
+del cifrado también ocupa 4 bytes en big endian.
+
+Se admite cualquier archivo, incluidos archivos vacíos, archivos sin extensión, extensiones largas y BMP
+(se oculta el archivo completo, con su encabezado). Al extraer, la extensión recuperada no puede contener
+`/`, `\` ni caracteres de control, para que la salida no se escriba fuera de la ruta pedida.
+
+### Cifrado
+
+| `-a`     | Algoritmo JCE | Clave    | Bloque e IV |
+|----------|---------------|----------|-------------|
+| `aes128` | AES           | 16 bytes | 16 bytes    |
+| `aes192` | AES           | 24 bytes | 16 bytes    |
+| `aes256` | AES           | 32 bytes | 16 bytes    |
+| `3des`   | DESede (DES-EDE3, tres claves) | 24 bytes | 8 bytes |
+
+| `-m`  | Transformación JCE          | Observaciones                                        |
+|-------|-----------------------------|------------------------------------------------------|
+| `ecb` | `<alg>/ECB/PKCS5Padding`    | Sin IV.                                              |
+| `cbc` | `<alg>/CBC/PKCS5Padding`    |                                                      |
+| `cfb` | `<alg>/CFB8/NoPadding`      | Realimentación de 8 bits; conserva la longitud.      |
+| `ofb` | `<alg>/OFB/NoPadding`       | Realimentación del bloque completo; conserva la longitud. |
+
+La clave y el IV se derivan de la password con PBKDF2-HMAC-SHA256, salt fijo de 8 bytes en cero y 10000
+iteraciones. De la salida se toman primero los bytes de la clave y a continuación los del IV. Con la password
+`margarita` la salida de 48 bytes es
+`03db0a157acfe8de523760aa731d8122b25f8d99f3173ec0b52849f459a4c20d212420edc583a686a94d19a3497363a2`; para
+AES-128 el IV es `b25f8d99f3173ec0b52849f459a4c20d` (el README de los ejemplos de la cátedra muestra por
+error el IV de AES-256 para ese caso). Se usa solamente la JCE incluida en el JDK 21.
+
+ECB y CBC agregan padding PKCS#5 (siempre, incluso si el bloque ya está alineado). La capacidad se controla
+sobre el payload cifrado real, con su padding y su prefijo. Sin autenticación, en CFB y OFB una password
+incorrecta se detecta porque lo descifrado no tiene el formato esperado.
 
 Si el archivo no entra en el portador, el programa informa la capacidad máxima del portador para el
 método elegido y cuántos bytes hacían falta.
@@ -135,7 +175,7 @@ está en los parámetros. Códigos de salida:
 | Código | Significado                                          |
 |--------|------------------------------------------------------|
 | 0      | Terminó bien.                                        |
-| 1      | Error de archivos, del BMP, de capacidad o de cifrado. |
+| 1      | Error de archivos, del BMP, de capacidad o de descifrado (password, algoritmo o modo incorrectos). |
 | 2      | Parámetros incorrectos.                              |
 
 ## Pruebas de la implementación
@@ -147,10 +187,26 @@ make test
 make test-cli
 ```
 
-`make test` ejecuta las pruebas de capacidad, extracción, ocultamiento y límites de LSBI, sin
-bibliotecas externas. `make test-cli` incluye esas pruebas y 23 casos por línea de comandos para
-LSB1, LSB4 y LSBI. Comprueba hashes y tamaños del PNG oficial, regeneración idéntica con `cmp`,
-archivos binarios, BMP con 1, 2 y 3 bytes de padding por fila, y errores sin crear ni sobrescribir salidas.
+`make test` ejecuta, sin bibliotecas externas:
+
+- las pruebas de capacidad, extracción, ocultamiento y límites de LSBI;
+- las del formato oculto: archivos vacíos, extensiones largas o UTF-8, bytes NUL y datos inválidos;
+- las del cifrador: PBKDF2 para los cuatro algoritmos, 32 vectores generados con OpenSSL 3 (las 16
+  combinaciones con un texto alineado y otro no alineado), longitudes cifradas de 0 a 40 bytes, ciphertext
+  truncado, padding inválido, password incorrecta y los tres ejemplos cifrados de la cátedra;
+- una matriz en memoria de los 3 métodos por 4 algoritmos por 4 modos (48 combinaciones).
+
+`make test-cli` incluye esas pruebas y además:
+
+- 23 casos por línea de comandos sin cifrado: hashes y tamaños del PNG oficial, regeneración idéntica
+  con `cmp`, archivos binarios, BMP con 1, 2 y 3 bytes de padding por fila, y errores sin crear ni
+  sobrescribir salidas;
+- 61 casos con cifrado: extracción y regeneración con `cmp` de los ejemplos cifrados, valores por defecto
+  de `-a` y `-m`, opciones ignoradas sin `-pass`, archivos vacíos, sin extensión, con extensión larga, BMP y
+  con bytes NUL, capacidad exacta y excedida después del padding, passwords/modos/algoritmos incorrectos,
+  ciphertexts truncados, errores de parámetros (código 2) y BMP inválidos (código 1), siempre sin
+  crear ni sobrescribir salidas.
+
 Los casos por CLI usan una carpeta temporal que se elimina al terminar. `cmp` forma parte de
 las herramientas habituales de Ubuntu.
 
@@ -185,8 +241,7 @@ El script compila una copia del código con `make` en una carpeta temporal y pru
 Muestra OK o FALLA para cada caso y, al final, cuántos pasaron y cuáles fallaron. Si todos pasan, termina con
 código 0. No deja archivos dentro del repositorio.
 
-Actualmente se aprueban **13 de 67 casos**. Los 54 restantes dependen del cifrado pendiente,
-por lo que este script todavía termina con código 1. Las pruebas de `make test-cli` pasan completas.
+Actualmente se aprueban **67 de 67 casos** y el script termina con código 0.
 
 ## Estructura
 
@@ -199,6 +254,6 @@ src/stegobmp/
 ├── bmp/               lectura, validación y escritura de BMP
 ├── payload/           formato tamaño || datos || extensión
 ├── steg/              métodos LSB1, LSB4 y LSBI
-├── crypto/            cifrado con password
+├── crypto/            cifrado con password (PBKDF2 + JCE)
 └── io/                lectura y escritura de archivos
 ```
