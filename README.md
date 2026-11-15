@@ -16,8 +16,9 @@ con AES-128/192/256 o 3DES en modo ECB, CBC, CFB (8 bits) u OFB.
 ## Requisitos
 
 - Linux. La consigna utiliza WSL2 con Ubuntu 22.04.3 LTS y exige funcionamiento en pampero.
-  El programa se verificó con Java 21 en WSL2 con Ubuntu 24.04 (sin cifrado) y en macOS (completo, con cifrado);
-  las pruebas en Ubuntu 22.04.3 y en pampero quedan pendientes.
+  El programa se verificó con Java 21 en WSL2 con Ubuntu 24.04 (sin cifrado) y en macOS (completo, con cifrado),
+  y en pampero (Arch Linux, OpenJDK 27.0.1, compilado con `--release 21`): todas las pruebas aprobadas.
+  La prueba en Ubuntu 22.04.3 queda pendiente.
 - JDK 21, que incluye `java`, `javac` y `jar`. No se usan librerías externas: el cifrado usa la JCE del JDK.
 - `make`.
 
