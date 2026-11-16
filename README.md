@@ -179,6 +179,34 @@ está en los parámetros. Códigos de salida:
 | 1      | Error de archivos, del BMP, de capacidad o de descifrado (password, algoritmo o modo incorrectos). |
 | 2      | Parámetros incorrectos.                              |
 
+## Reproducción del estegoanálisis del informe
+
+El procedimiento y los resultados del estegoanálisis están en [el informe](informe/informe.pdf).
+Para reproducirlos, se deben agregar los cuatro archivos BMP originales provistos por la cátedra en
+`materiales/archivos_definitivos_grupo11/`, relativa a la raíz del proyecto. Se omiten estas copias de
+la entrega para mantener el repositorio comprimido, con `.git` incluido, por debajo del límite de 50 MB.
+
+Desde la raíz del proyecto, crear la carpeta si no existe:
+
+```sh
+mkdir -p materiales/archivos_definitivos_grupo11
+```
+
+Copiar allí los archivos, conservando sus nombres y contenido original:
+
+```text
+materiales/archivos_definitivos_grupo11/
+├── avatar.bmp
+├── bogota.bmp
+├── hugo1.bmp
+└── madridoso.bmp
+```
+
+Para `madridoso.bmp`, usar la versión corregida enviada por la cátedra, que es la utilizada en el informe.
+Estos cuatro archivos no son necesarios para compilar ni para ejecutar las pruebas de la implementación,
+la comparación de métodos o el script de prueba de los ejemplos, que usan los archivos incluidos en
+`materiales/ejemplo/`.
+
 ## Pruebas de la implementación
 
 Desde la raíz del repositorio:
@@ -220,7 +248,7 @@ make comparar
 La herramienta utiliza el mismo PNG y portador de los ejemplos, verifica la recuperación y la coincidencia
 con los BMP oficiales, e imprime capacidades, bytes/bits modificados, MSE y PSNR. Trabaja en memoria y
 no genera imágenes en el repositorio. El análisis, los resultados y las respuestas I, II, VII y IX están en
-[el informe de implementación y análisis](informe/ImplementacionYAnalisis.md).
+[el informe de implementación y análisis](informe/informe.pdf).
 
 ## Prueba de los ejemplos
 
